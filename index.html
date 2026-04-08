@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridOps navigation prototype v2</title>
+<style>
+:root {
+  --bg: #fafaf7;
+  --sidebar-bg: #f5f4ef;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.15);
+  --text: #1a1a1a;
+  --text-muted: #5f5e5a;
+  --text-dim: #888780;
+  --accent: #185fa5;
+  --accent-bg: #e6f1fb;
+  --accent-text: #0c447c;
+  --success: #3b6d11;
+  --success-bg: #eaf3de;
+  --warning: #854f0b;
+  --warning-bg: #faeeda;
+  --danger: #a32d2d;
+  --danger-bg: #fcebeb;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.app {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+/* ========== SIDEBAR ========== */
+.sidebar {
+  background: var(--sidebar-bg);
+  border-right: 0.5px solid var(--border-strong);
+  padding: 16px 12px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.logo {
+  font-size: 16px;
+  font-weight: 500;
+  padding: 8px 12px 16px 12px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo-mark {
+  width: 24px;
+  height: 24px;
+  background: var(--text);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+.my-day-tile {
+  background: var(--accent-bg);
+  border: 0.5px solid var(--accent);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  color: var(--accent-text);
+  transition: all 0.1s;
+}
+.my-day-tile:hover { background: #d5e8f8; }
+.my-day-tile.active { background: var(--accent); color: #fff; }
+.my-day-tile .label {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.my-day-tile .sub {
+  font-size: 11px;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+.nav-group { margin-bottom: 4px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  user-select: none;
+  transition: background 0.08s;
+}
+.nav-item:hover { background: rgba(0,0,0,0.05); }
+.nav-item.active {
+  background: var(--text);
+  color: #fff;
+  font-weight: 500;
+}
+.nav-item.parent { font-weight: 500; }
+.nav-item .icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.nav-item .chevron {
+  margin-left: auto;
+  font-size: 10px;
+  opacity: 0.5;
+  transition: transform 0.15s;
+}
+.nav-item.expanded .chevron { transform: rotate(90deg); }
+.nav-children {
+  margin-left: 10px;
+  border-left: 0.5px solid var(--border-strong);
+  padding-left: 10px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+  display: none;
+}
+.nav-children.visible { display: block; }
+.nav-children .nav-item {
+  font-size: 12.5px;
+  padding: 6px 10px;
+}
+
+/* ========== MAIN ========== */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.topbar {
+  background: var(--surface);
+  border-bottom: 0.5px solid var(--border-strong);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.breadcrumb {
+  font-size: 13px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.breadcrumb .current { color: var(--text); font-weight: 500; }
+.topbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cmd-k {
+  background: var(--sidebar-bg);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cmd-k kbd {
+  font-family: -apple-system, monospace;
+  background: var(--surface);
+  border: 0.5px solid var(--border-strong);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+.icon-btn {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  font-size: 14px;
+  color: var(--text);
+  transition: all 0.1s;
+}
+.icon-btn:hover { background: var(--sidebar-bg); }
+.icon-btn .badge-dot {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 500;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+.btn {
+  background: var(--surface);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  transition: all 0.1s;
+}
+.btn:hover { background: var(--sidebar-bg); }
+.btn.primary {
+  background: var(--text);
+  color: #fff;
+  border-color: var(--text);
+}
+.btn.primary:hover { background: #000; }
+.content {
+  padding: 24px;
+  max-width: 1400px;
+  width: 100%;
+  flex: 1;
+}
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.page-header h1 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 4px 0;
+}
+.page-header .sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+.page-header .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 0.5px solid var(--border-strong);
+  margin-bottom: 20px;
+}
+.tab {
+  padding: 10px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -0.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+  transition: all 0.1s;
+}
+.tab:hover { color: var(--text); }
+.tab.active {
+  color: var(--text);
+  font-weight: 500;
+  border-bottom-color: var(--text);
+}
+.tab .count {
+  font-size: 11px;
+  background: var(--sidebar-bg);
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-left: 6px;
+  color: var(--text-muted);
+}
+
+/* ========== CARDS & GRIDS ========== */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.metric {
+  background: var(--sidebar-bg);
+  padding: 14px 16px;
+  border-radius: var(--radius);
+}
+.metric .label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.metric .value {
+  font-size: 22px;
+  font-weight: 500;
+}
+.metric .delta {
+  font-size: 11px;
+  margin-top: 2px;
+}
+.metric .delta.up { color: var(--success); }
+.metric .delta.down { color: var(--danger); }
+
+.section {
+  background: var(--surface);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+.section h3 {
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0 0 12px 0;
+  display: flex;
+  align-items: center;
+}
+.section h3 .link {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  cursor: pointer;
+  font-weight: 400;
+}
+
+/* ========== TRIP LIST ========== */
+.trip-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 180px 120px 100px auto;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 0.5px solid var(--border);
+  align-items: center;
+  font-size: 13px;
+}
+.trip-row:last-child { border-bottom: none; }
+.trip-row .time { font-weight: 500; }
+.trip-row .route { color: var(--text); }
+.trip-row .route .sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.trip-row .vehicle { color: var(--text-muted); font-size: 12px; }
+.trip-row .driver { color: var(--text-muted); font-size: 12px; }
+.badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  font-weight: 500;
+}
+.badge.charter { background: #f3e8ff; color: #6b21a8; }
+.badge.shuttle { background: #dcfce7; color: #166534; }
+.badge.confirmed { background: var(--success-bg); color: var(--success); }
+.badge.pending { background: var(--warning-bg); color: var(--warning); }
+.badge.in-progress { background: var(--accent-bg); color: var(--accent-text); }
+.badge.completed { background: var(--sidebar-bg); color: var(--text-muted); }
+
+/* ========== FILL BAR ========== */
+.fill-bar {
+  height: 6px;
+  background: var(--sidebar-bg);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.fill-bar-inner {
+  height: 100%;
+  background: var(--success);
+}
+.fill-bar-inner.warning { background: var(--warning); }
+.fill-bar-inner.danger { background: var(--danger); }
+
+/* ========== MESSAGES ========== */
+.msg-row {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 0.5px solid var(--border);
+  cursor: pointer;
+}
+.msg-row:last-child { border-bottom: none; }
+.msg-row:hover { background: var(--sidebar-bg); }
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.msg-row .body { flex: 1; min-width: 0; }
+.msg-row .name { font-size: 13px; font-weight: 500; }
+.msg-row .preview {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.msg-row .time {
+  font-size: 11px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.unread-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 12px;
+}
+
+/* ========== QUICK ACTIONS ========== */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.quick-action {
+  background: var(--surface);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  transition: all 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.quick-action:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+.quick-action .qa-icon {
+  width: 32px;
+  height: 32px;
+  background: var(--accent-bg);
+  color: var(--accent-text);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.quick-action .qa-label { font-weight: 500; }
+.quick-action .qa-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+/* ========== INBOX FLYOUT ========== */
+.inbox-flyout {
+  position: fixed;
+  top: 56px;
+  right: 24px;
+  width: 380px;
+  background: var(--surface);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  z-index: 100;
+  display: none;
+  overflow: hidden;
+}
+.inbox-flyout.visible { display: block; }
+.inbox-flyout .header {
+  padding: 14px 16px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+.inbox-flyout .header h3 { margin: 0; font-size: 14px; font-weight: 500; }
+.inbox-flyout .header .link {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent);
+  cursor: pointer;
+}
+.inbox-flyout .body { max-height: 480px; overflow-y: auto; padding: 0 16px; }
+
+/* ========== EMPTY STATES ========== */
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+.empty h3 { color: var(--text); margin-bottom: 4px; font-size: 14px; }
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; }
+  .quick-actions { grid-template-columns: repeat(2, 1fr); }
+  .trip-row { grid-template-columns: 60px 1fr auto; }
+  .trip-row .vehicle, .trip-row .driver, .trip-row .status-col { display: none; }
+  .inbox-flyout { right: 8px; left: 8px; width: auto; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">G</div>
+    GridOps
+  </div>
+
+  <div class="my-day-tile" data-route="my-day">
+    <div class="label">★ My day</div>
+    <div class="sub">Wed, Apr 8 · Good morning, Sam</div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-item parent" data-expand="bookings">
+      <span class="icon">✎</span>
+      <span>Bookings</span>
+      <span class="chevron">▸</span>
+    </div>
+    <div class="nav-children" id="bookings-children">
+      <div class="nav-item" data-route="charter"><span class="icon">◆</span>Charter</div>
+      <div class="nav-item" data-route="shuttle"><span class="icon">→</span>Shuttle</div>
+      <div class="nav-item" data-route="pricing"><span class="icon">%</span>Pricing</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-item parent" data-expand="dispatch-group">
+      <span class="icon">◉</span>
+      <span>Dispatch</span>
+      <span class="chevron">▸</span>
+    </div>
+    <div class="nav-children" id="dispatch-group-children">
+      <div class="nav-item" data-route="dispatch"><span class="icon">◉</span>Live board</div>
+      <div class="nav-item" data-route="fleet-calendar"><span class="icon">▦</span>Fleet calendar</div>
+      <div class="nav-item" data-route="fleet-map"><span class="icon">◈</span>Fleet map</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-item parent" data-expand="fleet">
+      <span class="icon">▣</span>
+      <span>Fleet</span>
+      <span class="chevron">▸</span>
+    </div>
+    <div class="nav-children" id="fleet-children">
+      <div class="nav-item" data-route="all-vehicles"><span class="icon">▣</span>All vehicles</div>
+      <div class="nav-item" data-route="vehicle-types"><span class="icon">▤</span>Vehicle types</div>
+      <div class="nav-item" data-route="maintenance"><span class="icon">◪</span>Maintenance & blocks</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-item parent" data-expand="drivers">
+      <span class="icon">◉</span>
+      <span>Drivers</span>
+      <span class="chevron">▸</span>
+    </div>
+    <div class="nav-children" id="drivers-children">
+      <div class="nav-item" data-route="all-drivers"><span class="icon">◉</span>All drivers</div>
+      <div class="nav-item" data-route="driver-blocks"><span class="icon">◐</span>Time off & blocks</div>
+      <div class="nav-item" data-route="driver-onboarding"><span class="icon">+</span>Onboarding</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-item parent" data-expand="customers">
+      <span class="icon">◎</span>
+      <span>Customers</span>
+      <span class="chevron">▸</span>
+    </div>
+    <div class="nav-children" id="customers-children">
+      <div class="nav-item" data-route="all-customers"><span class="icon">◎</span>All customers</div>
+      <div class="nav-item" data-route="accounts"><span class="icon">▢</span>Accounts</div>
+    </div>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-item parent" data-expand="office">
+      <span class="icon">⚙</span>
+      <span>Office</span>
+      <span class="chevron">▸</span>
+    </div>
+    <div class="nav-children" id="office-children">
+      <div class="nav-item" data-route="payments"><span class="icon">$</span>Payments</div>
+      <div class="nav-item" data-route="reports"><span class="icon">▥</span>Reports</div>
+      <div class="nav-item" data-route="team"><span class="icon">◉</span>Team</div>
+      <div class="nav-item" data-route="integrations"><span class="icon">◇</span>Integrations</div>
+      <div class="nav-item" data-route="settings"><span class="icon">⚙</span>Settings</div>
+      <div class="nav-item" data-route="audit"><span class="icon">≡</span>Audit log</div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb" id="breadcrumb">
+      <span>GridOps</span>
+      <span>/</span>
+      <span class="current">My day</span>
+    </div>
+    <div class="topbar-actions">
+      <div class="cmd-k">Search or jump to... <kbd>⌘K</kbd></div>
+      <button class="icon-btn" id="inbox-btn" title="Inbox">
+        ✉
+        <span class="badge-dot">3</span>
+      </button>
+      <button class="icon-btn" title="Notifications">◔</button>
+      <button class="icon-btn" title="Help">?</button>
+      <button class="btn primary">+ New</button>
+    </div>
+  </div>
+
+  <div class="content" id="content"></div>
+</div>
+
+<div class="inbox-flyout" id="inbox-flyout">
+  <div class="header">
+    <h3>Inbox</h3>
+    <span class="link" id="inbox-open-full">Open full inbox →</span>
+  </div>
+  <div class="body" id="inbox-flyout-body"></div>
+</div>
+
+</div>
+
+<script>
+const MOCK = {
+  trips_today: [
+    { time: '07:00', type: 'shuttle', route: 'Downtown → YYC Airport', stops: '5 stops', vehicle: 'Coach 04 · 56-seat', driver: 'Mike Chen', status: 'in-progress', statusLabel: 'In progress' },
+    { time: '08:00', type: 'shuttle', route: 'Downtown → YYC Airport', stops: '5 stops', vehicle: 'Coach 06 · 56-seat', driver: 'Sarah Liu', status: 'confirmed', statusLabel: 'Boarding' },
+    { time: '09:30', type: 'charter', route: 'Marriott → Banff Springs', stops: 'Rocky Mtn Tours Ltd.', vehicle: 'Coach 02 · 54-seat', driver: 'David Park', status: 'confirmed', statusLabel: 'Confirmed' },
+    { time: '10:00', type: 'shuttle', route: 'Downtown → YYC Airport', stops: '5 stops', vehicle: 'Unassigned', driver: 'Unassigned', status: 'pending', statusLabel: 'Needs vehicle' },
+    { time: '11:00', type: 'charter', route: 'Hyatt → Calgary Stampede', stops: 'ABC Corporation', vehicle: 'Limo 01 · 8-pax', driver: 'Jennifer Wong', status: 'confirmed', statusLabel: 'Confirmed' },
+    { time: '13:00', type: 'shuttle', route: 'Downtown → YYC Airport', stops: '5 stops', vehicle: 'Coach 04 · 56-seat', driver: 'Mike Chen', status: 'confirmed', statusLabel: 'Scheduled' },
+    { time: '14:30', type: 'charter', route: 'Wedding charter · Heritage Park', stops: 'Emma & Jack wedding', vehicle: 'Coach 03 · 54-seat', driver: 'Tom Bradley', status: 'confirmed', statusLabel: 'Confirmed' },
+    { time: '16:00', type: 'shuttle', route: 'Downtown → YYC Airport', stops: '5 stops', vehicle: 'Coach 06 · 56-seat', driver: 'Sarah Liu', status: 'confirmed', statusLabel: 'Scheduled' },
+  ],
+  messages: [
+    { name: 'Rachel Kim', initials: 'RK', preview: 'Hi, just wanted to confirm the pickup time for tomorrow...', time: '12m', unread: true },
+    { name: 'Rocky Mtn Tours Ltd.', initials: 'RM', preview: 'Can we add a second vehicle for the Sunday group?', time: '1h', unread: true },
+    { name: 'Emma Lindqvist', initials: 'EL', preview: 'Thank you so much for the quote! A few questions...', time: '3h', unread: true },
+    { name: 'ABC Corporation', initials: 'AC', preview: 'Invoice received, thanks.', time: 'Yesterday', unread: false },
+    { name: 'Tom Bradley', initials: 'TB', preview: 'Running 10min late to the wedding venue...', time: 'Yesterday', unread: false },
+  ],
+  departures_today: [
+    { time: '07:00', route: 'Downtown → YYC Airport', sold: 42, capacity: 56, vehicle: 'Coach 04', status: 'in-progress' },
+    { time: '08:00', route: 'Downtown → YYC Airport', sold: 38, capacity: 56, vehicle: 'Coach 06', status: 'confirmed' },
+    { time: '10:00', route: 'Downtown → YYC Airport', sold: 12, capacity: 56, vehicle: 'Unassigned', status: 'pending' },
+    { time: '13:00', route: 'Downtown → YYC Airport', sold: 29, capacity: 56, vehicle: 'Coach 04', status: 'confirmed' },
+    { time: '16:00', route: 'Downtown → YYC Airport', sold: 51, capacity: 56, vehicle: 'Coach 06', status: 'confirmed' },
+    { time: '19:00', route: 'Downtown → YYC Airport', sold: 8, capacity: 56, vehicle: 'Unassigned', status: 'pending' },
+  ],
+  charter_bookings: [
+    { time: '09:30', client: 'Rocky Mtn Tours Ltd.', route: 'Marriott → Banff Springs', pax: 42, vehicle: 'Coach 02', status: 'confirmed' },
+    { time: '11:00', client: 'ABC Corporation', route: 'Hyatt → Calgary Stampede', pax: 8, vehicle: 'Limo 01', status: 'confirmed' },
+    { time: '14:30', client: 'Emma & Jack wedding', route: 'Wedding charter · Heritage Park', pax: 38, vehicle: 'Coach 03', status: 'confirmed' },
+    { time: '18:00', client: 'Corporate Events Inc.', route: 'Downtown hotels → Gala venue', pax: 24, vehicle: 'Pending', status: 'pending' },
+  ],
+};
+
+const ROUTES = {
+  'my-day': renderMyDay,
+  'charter': renderCharter,
+  'shuttle': renderShuttle,
+  'pricing': () => renderPlaceholder('Pricing', 'Rate cards, mileage rules, hourly formulas, and seasonal pricing'),
+  'dispatch': () => renderPlaceholder('Live board', 'Unified live board for charter bookings and shuttle departures'),
+  'fleet-calendar': () => renderPlaceholder('Fleet calendar', 'Day, week, and month views of vehicle allocations'),
+  'fleet-map': () => renderPlaceholder('Fleet map', 'Real-time GPS view of your fleet'),
+  'all-vehicles': () => renderPlaceholder('All vehicles', 'Your fleet inventory'),
+  'vehicle-types': () => renderPlaceholder('Vehicle types', 'Coaches, mini-buses, sprinters, limos, sedans'),
+  'maintenance': () => renderPlaceholder('Maintenance & blocks', 'Schedule maintenance and planned downtime'),
+  'all-drivers': () => renderPlaceholder('All drivers', 'Employees, contractors, and unclassified drivers'),
+  'driver-blocks': () => renderPlaceholder('Time off & blocks', 'Driver schedules, time off, and unavailability'),
+  'driver-onboarding': () => renderPlaceholder('Onboarding', 'Invitation flow and onboarding requirements'),
+  'all-customers': () => renderPlaceholder('All customers', 'Your customer directory and booking history'),
+  'accounts': () => renderPlaceholder('Accounts', 'Corporate accounts and recurring contracts'),
+  'inbox': renderInbox,
+  'payments': () => renderPlaceholder('Payments', 'Payment history and payout management'),
+  'reports': renderReports,
+  'team': () => renderPlaceholder('Team', 'Manage your office staff and their access'),
+  'integrations': () => renderPlaceholder('Integrations', 'Stripe, HubSpot, and other connections'),
+  'settings': () => renderPlaceholder('Settings', 'Business profile, notifications, trip purposes, and more'),
+  'audit': () => renderPlaceholder('Audit log', 'Every action, every actor, timestamped'),
+};
+
+const BREADCRUMBS = {
+  'my-day': ['My day'],
+  'charter': ['Bookings', 'Charter'],
+  'shuttle': ['Bookings', 'Shuttle'],
+  'pricing': ['Bookings', 'Pricing'],
+  'dispatch': ['Dispatch', 'Live board'],
+  'fleet-calendar': ['Dispatch', 'Fleet calendar'],
+  'fleet-map': ['Dispatch', 'Fleet map'],
+  'all-vehicles': ['Fleet', 'All vehicles'],
+  'vehicle-types': ['Fleet', 'Vehicle types'],
+  'maintenance': ['Fleet', 'Maintenance & blocks'],
+  'all-drivers': ['Drivers', 'All drivers'],
+  'driver-blocks': ['Drivers', 'Time off & blocks'],
+  'driver-onboarding': ['Drivers', 'Onboarding'],
+  'all-customers': ['Customers', 'All customers'],
+  'accounts': ['Customers', 'Accounts'],
+  'inbox': ['Inbox'],
+  'payments': ['Office', 'Payments'],
+  'reports': ['Office', 'Reports'],
+  'team': ['Office', 'Team'],
+  'integrations': ['Office', 'Integrations'],
+  'settings': ['Office', 'Settings'],
+  'audit': ['Office', 'Audit log'],
+};
+
+const PARENT_MAP = {
+  'charter': 'bookings', 'shuttle': 'bookings', 'pricing': 'bookings',
+  'dispatch': 'dispatch-group', 'fleet-calendar': 'dispatch-group', 'fleet-map': 'dispatch-group',
+  'all-vehicles': 'fleet', 'vehicle-types': 'fleet', 'maintenance': 'fleet',
+  'all-drivers': 'drivers', 'driver-blocks': 'drivers', 'driver-onboarding': 'drivers',
+  'all-customers': 'customers', 'accounts': 'customers',
+  'payments': 'office', 'reports': 'office', 'team': 'office',
+  'integrations': 'office', 'settings': 'office', 'audit': 'office',
+};
+
+let currentRoute = 'my-day';
+let charterTab = 'bookings';
+let shuttleTab = 'departures';
+let reportsTab = 'overview';
+
+function renderMyDay() {
+  const unread = MOCK.messages.filter(m => m.unread).length;
+  return `
+    <div class="page-header">
+      <div>
+        <h1>Good morning, Sam</h1>
+        <p class="sub">Wednesday, April 8 · Here's what's happening today</p>
+      </div>
+      <div class="actions">
+        <button class="btn">Customize</button>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="label">Trips today</div>
+        <div class="value">8</div>
+        <div class="delta up">+2 vs avg Wed</div>
+      </div>
+      <div class="metric">
+        <div class="label">Revenue today</div>
+        <div class="value">$4,820</div>
+        <div class="delta up">+12% vs last Wed</div>
+      </div>
+      <div class="metric">
+        <div class="label">Vehicles on road</div>
+        <div class="value">5 / 8</div>
+        <div class="delta">3 in depot</div>
+      </div>
+      <div class="metric">
+        <div class="label">Unassigned</div>
+        <div class="value" style="color: var(--warning);">2</div>
+        <div class="delta down">Needs vehicle</div>
+      </div>
+      <div class="metric">
+        <div class="label">Unread messages</div>
+        <div class="value">${unread}</div>
+        <div class="delta">Since yesterday</div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="quick-action" data-goto="charter">
+        <div class="qa-icon">+</div>
+        <div>
+          <div class="qa-label">New booking</div>
+          <div class="qa-sub">Charter quote or direct</div>
+        </div>
+      </button>
+      <button class="quick-action" data-goto="shuttle">
+        <div class="qa-icon">→</div>
+        <div>
+          <div class="qa-label">Sell shuttle ticket</div>
+          <div class="qa-sub">Walk-up sale</div>
+        </div>
+      </button>
+      <button class="quick-action" data-goto="maintenance">
+        <div class="qa-icon">◪</div>
+        <div>
+          <div class="qa-label">Block a vehicle</div>
+          <div class="qa-sub">Maintenance or hold</div>
+        </div>
+      </button>
+      <button class="quick-action" id="qa-inbox">
+        <div class="qa-icon">✉</div>
+        <div>
+          <div class="qa-label">Open inbox</div>
+          <div class="qa-sub">${unread} unread</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="section">
+      <h3>Today's trips <a class="link" data-goto="dispatch">Open live board →</a></h3>
+      ${renderTripList(MOCK.trips_today)}
+    </div>
+
+    <div class="section">
+      <h3>Alerts</h3>
+      <div style="font-size: 13px;">
+        <div style="padding: 10px 0; border-bottom: 0.5px solid var(--border);">
+          <div style="color: var(--warning); font-weight: 500;">2 trips need a vehicle</div>
+          <div style="color: var(--text-muted); font-size: 12px;">10am shuttle, 7pm shuttle</div>
+        </div>
+        <div style="padding: 10px 0; border-bottom: 0.5px solid var(--border);">
+          <div style="font-weight: 500;">Driver license expiring</div>
+          <div style="color: var(--text-muted); font-size: 12px;">Mike Chen · Apr 22</div>
+        </div>
+        <div style="padding: 10px 0;">
+          <div style="font-weight: 500;">3 quotes awaiting response</div>
+          <div style="color: var(--text-muted); font-size: 12px;">Oldest: 2 days ago</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTripList(trips) {
+  return trips.map(t => `
+    <div class="trip-row">
+      <div class="time">${t.time}</div>
+      <div class="route">
+        <div><span class="badge ${t.type}">${t.type}</span> ${t.route}</div>
+        <div class="sub">${t.stops}</div>
+      </div>
+      <div class="vehicle">${t.vehicle}</div>
+      <div class="driver">${t.driver}</div>
+      <div class="status-col"><span class="badge ${t.status}">${t.statusLabel}</span></div>
+      <div><button class="btn" style="padding: 4px 10px; font-size: 12px;">Open</button></div>
+    </div>
+  `).join('');
+}
+
+function renderMessage(m) {
+  return `
+    <div class="msg-row">
+      ${m.unread ? '<div class="unread-dot"></div>' : '<div style="width:8px;"></div>'}
+      <div class="avatar">${m.initials}</div>
+      <div class="body">
+        <div class="name">${m.name}</div>
+        <div class="preview">${m.preview}</div>
+      </div>
+      <div class="time">${m.time}</div>
+    </div>
+  `;
+}
+
+function renderCharter() {
+  return `
+    <div class="page-header">
+      <div>
+        <h1>Charter</h1>
+        <p class="sub">Quotes, bookings, and charter widget settings</p>
+      </div>
+      <div class="actions">
+        <button class="btn primary">+ New booking</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab ${charterTab === 'bookings' ? 'active' : ''}" data-charter-tab="bookings">Bookings <span class="count">4 today</span></div>
+      <div class="tab ${charterTab === 'quotes' ? 'active' : ''}" data-charter-tab="quotes">Quotes <span class="count">7 open</span></div>
+      <div class="tab ${charterTab === 'widget' ? 'active' : ''}" data-charter-tab="widget">Widget settings</div>
+    </div>
+    ${charterTab === 'bookings' ? renderCharterBookings() : ''}
+    ${charterTab === 'quotes' ? renderCharterQuotes() : ''}
+    ${charterTab === 'widget' ? renderCharterWidget() : ''}
+  `;
+}
+
+function renderCharterBookings() {
+  return `
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+      <button class="btn" style="background: var(--text); color: #fff; border-color: var(--text);">Today</button>
+      <button class="btn">This week</button>
+      <button class="btn">Next week</button>
+      <button class="btn">Custom range</button>
+      <div style="flex: 1;"></div>
+      <button class="btn">Check availability</button>
+      <button class="btn">All statuses ▾</button>
+    </div>
+    <div class="section">
+      <h3>4 charter bookings today</h3>
+      ${MOCK.charter_bookings.map(b => `
+        <div class="trip-row">
+          <div class="time">${b.time}</div>
+          <div class="route">
+            <div>${b.client}</div>
+            <div class="sub">${b.route} · ${b.pax} passengers</div>
+          </div>
+          <div class="vehicle">${b.vehicle}</div>
+          <div class="driver"></div>
+          <div><span class="badge ${b.status}">${b.status}</span></div>
+          <div><button class="btn" style="padding: 4px 10px; font-size: 12px;">Open</button></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderCharterQuotes() {
+  return `
+    <div class="empty">
+      <h3>Quotes tab</h3>
+      <p>Live quote pipeline would render here — 7 open quotes awaiting operator response, sortable by age, value, or customer.</p>
+    </div>
+  `;
+}
+
+function renderCharterWidget() {
+  return `
+    <div class="empty">
+      <h3>Charter widget settings</h3>
+      <p>Configuration for the public charter booking widget: branding, colors, required fields, embed code.</p>
+    </div>
+  `;
+}
+
+function renderShuttle() {
+  return `
+    <div class="page-header">
+      <div>
+        <h1>Shuttle</h1>
+        <p class="sub">Departures, schedules, and routes</p>
+      </div>
+      <div class="actions">
+        <button class="btn primary">+ Sell ticket</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab ${shuttleTab === 'departures' ? 'active' : ''}" data-shuttle-tab="departures">Departures <span class="count">6 today</span></div>
+      <div class="tab ${shuttleTab === 'schedules' ? 'active' : ''}" data-shuttle-tab="schedules">Schedules</div>
+      <div class="tab ${shuttleTab === 'routes' ? 'active' : ''}" data-shuttle-tab="routes">Routes</div>
+      <div class="tab ${shuttleTab === 'widget' ? 'active' : ''}" data-shuttle-tab="widget">Widget settings</div>
+    </div>
+    ${shuttleTab === 'departures' ? renderDepartures() : ''}
+    ${shuttleTab === 'schedules' ? renderSchedules() : ''}
+    ${shuttleTab === 'routes' ? renderRoutes() : ''}
+    ${shuttleTab === 'widget' ? '<div class="empty"><h3>Shuttle widget settings</h3><p>Shuttle booking widget configuration.</p></div>' : ''}
+  `;
+}
+
+function renderDepartures() {
+  return `
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+      <button class="btn" style="background: var(--text); color: #fff; border-color: var(--text);">Today</button>
+      <button class="btn">This week</button>
+      <button class="btn">Next week</button>
+      <button class="btn">Custom range</button>
+      <div style="flex: 1;"></div>
+      <button class="btn">All routes ▾</button>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="label">Departures today</div><div class="value">6</div></div>
+      <div class="metric"><div class="label">Seats sold</div><div class="value">180 / 336</div></div>
+      <div class="metric"><div class="label">Avg fill rate</div><div class="value">54%</div></div>
+      <div class="metric"><div class="label">Unassigned</div><div class="value" style="color: var(--warning);">2</div></div>
+    </div>
+    <div class="section">
+      <h3>Today's departures</h3>
+      ${MOCK.departures_today.map(d => {
+        const pct = Math.round((d.sold / d.capacity) * 100);
+        const fillClass = pct > 80 ? '' : pct > 40 ? 'warning' : 'danger';
+        return `
+          <div class="trip-row">
+            <div class="time">${d.time}</div>
+            <div class="route">
+              <div>${d.route}</div>
+              <div class="sub">${d.sold} / ${d.capacity} seats</div>
+              <div class="fill-bar" style="max-width: 200px;"><div class="fill-bar-inner ${fillClass}" style="width: ${pct}%"></div></div>
+            </div>
+            <div class="vehicle">${d.vehicle}</div>
+            <div class="driver"></div>
+            <div><span class="badge ${d.status}">${d.status === 'in-progress' ? 'In progress' : d.status === 'pending' ? 'Needs vehicle' : 'Ready'}</span></div>
+            <div><button class="btn" style="padding: 4px 10px; font-size: 12px;">Manifest</button></div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderSchedules() {
+  return `
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div></div>
+      <div class="actions"><button class="btn primary">+ New schedule</button></div>
+    </div>
+    <div class="section">
+      <h3>Active schedules</h3>
+      <div style="font-size: 13px;">
+        <div style="padding: 14px 0; border-bottom: 0.5px solid var(--border);">
+          <div style="font-weight: 500;">Weekday airport runs</div>
+          <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">Downtown → YYC · Mon–Fri · 7am, 8am, 10am, 1pm, 4pm, 7pm</div>
+          <div style="color: var(--text-muted); font-size: 11px; margin-top: 4px;">Effective April 1 · Rolling 30-day departures generated</div>
+        </div>
+        <div style="padding: 14px 0; border-bottom: 0.5px solid var(--border);">
+          <div style="font-weight: 500;">Weekend airport runs</div>
+          <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">Downtown → YYC · Sat, Sun · 9am, 12pm, 3pm, 6pm</div>
+        </div>
+        <div style="padding: 14px 0;">
+          <div style="font-weight: 500;">Evening Banff shuttle</div>
+          <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">Calgary → Banff · Fri, Sat · 5pm, 8pm</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderRoutes() {
+  return `
+    <div class="page-header" style="margin-bottom: 16px;">
+      <div></div>
+      <div class="actions"><button class="btn primary">+ New route</button></div>
+    </div>
+    <div class="section">
+      <h3>Routes</h3>
+      <div style="font-size: 13px;">
+        <div style="padding: 14px 0; border-bottom: 0.5px solid var(--border);">
+          <div style="font-weight: 500;">Downtown → YYC Airport</div>
+          <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">5 stops · 28.4 km · ~40 min · $25 flat fare</div>
+        </div>
+        <div style="padding: 14px 0; border-bottom: 0.5px solid var(--border);">
+          <div style="font-weight: 500;">Calgary → Banff Shuttle</div>
+          <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">3 stops · 125 km · ~1h 35min · $65 flat fare</div>
+        </div>
+        <div style="padding: 14px 0;">
+          <div style="font-weight: 500;">Hotel circuit (downtown)</div>
+          <div style="color: var(--text-muted); font-size: 12px; margin-top: 2px;">8 stops · 6.2 km · ~25 min · $5 per segment</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderInbox() {
+  return `
+    <div class="page-header">
+      <div>
+        <h1>Inbox</h1>
+        <p class="sub">All customer messages and conversations</p>
+      </div>
+      <div class="actions">
+        <button class="btn primary">+ New message</button>
+      </div>
+    </div>
+    <div class="section">
+      ${MOCK.messages.map(renderMessage).join('')}
+    </div>
+  `;
+}
+
+function renderReports() {
+  return `
+    <div class="page-header">
+      <div>
+        <h1>Reports</h1>
+        <p class="sub">Business performance and insights</p>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab ${reportsTab === 'overview' ? 'active' : ''}" data-reports-tab="overview">Overview</div>
+      <div class="tab ${reportsTab === 'standard' ? 'active' : ''}" data-reports-tab="standard">Standard</div>
+      <div class="tab ${reportsTab === 'explore' ? 'active' : ''}" data-reports-tab="explore">Explore</div>
+      <div class="tab ${reportsTab === 'custom' ? 'active' : ''}" data-reports-tab="custom">Custom</div>
+    </div>
+    ${reportsTab === 'overview' ? `
+      <div class="metrics">
+        <div class="metric"><div class="label">Revenue this month</div><div class="value">$84,200</div><div class="delta up">+18%</div></div>
+        <div class="metric"><div class="label">Trips completed</div><div class="value">312</div><div class="delta up">+24</div></div>
+        <div class="metric"><div class="label">Avg fill rate</div><div class="value">62%</div><div class="delta up">+4pp</div></div>
+        <div class="metric"><div class="label">Active customers</div><div class="value">47</div></div>
+      </div>
+      <div class="section"><h3>Revenue trend</h3><div class="empty">Chart would render here</div></div>
+    ` : `<div class="empty"><h3>${reportsTab} reports</h3><p>Report content for this section would load here.</p></div>`}
+  `;
+}
+
+function renderPlaceholder(title, sub) {
+  return `
+    <div class="page-header">
+      <div>
+        <h1>${title}</h1>
+        <p class="sub">${sub}</p>
+      </div>
+    </div>
+    <div class="section">
+      <div class="empty">
+        <h3>${title}</h3>
+        <p>This is a placeholder. Wire this up to real data when you build it.</p>
+      </div>
+    </div>
+  `;
+}
+
+function navigate(route) {
+  currentRoute = route;
+
+  const parentId = PARENT_MAP[route];
+  if (parentId) {
+    document.getElementById(parentId + '-children').classList.add('visible');
+    document.querySelector(`[data-expand="${parentId}"]`).classList.add('expanded');
+  }
+
+  const content = document.getElementById('content');
+  const renderer = ROUTES[route] || (() => renderPlaceholder(route, ''));
+  content.innerHTML = renderer();
+
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.route === route);
+  });
+  document.querySelector('.my-day-tile').classList.toggle('active', route === 'my-day');
+
+  const crumbs = BREADCRUMBS[route] || [route];
+  document.getElementById('breadcrumb').innerHTML = crumbs.map((c, i) =>
+    i === crumbs.length - 1 ? `<span class="current">${c}</span>` : `<span>${c}</span><span>/</span>`
+  ).join('');
+
+  window.scrollTo(0, 0);
+}
+
+function toggleInboxFlyout() {
+  const flyout = document.getElementById('inbox-flyout');
+  const body = document.getElementById('inbox-flyout-body');
+  if (!flyout.classList.contains('visible')) {
+    body.innerHTML = MOCK.messages.map(renderMessage).join('');
+  }
+  flyout.classList.toggle('visible');
+}
+
+document.querySelectorAll('[data-route]').forEach(el => {
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    navigate(el.dataset.route);
+  });
+});
+
+document.querySelectorAll('[data-expand]').forEach(el => {
+  el.addEventListener('click', () => {
+    const target = document.getElementById(el.dataset.expand + '-children');
+    target.classList.toggle('visible');
+    el.classList.toggle('expanded');
+  });
+});
+
+document.getElementById('inbox-btn').addEventListener('click', e => {
+  e.stopPropagation();
+  toggleInboxFlyout();
+});
+
+document.getElementById('inbox-open-full').addEventListener('click', e => {
+  e.stopPropagation();
+  document.getElementById('inbox-flyout').classList.remove('visible');
+  navigate('inbox');
+});
+
+document.addEventListener('click', e => {
+  const flyout = document.getElementById('inbox-flyout');
+  if (flyout.classList.contains('visible') && !flyout.contains(e.target) && !e.target.closest('#inbox-btn')) {
+    flyout.classList.remove('visible');
+  }
+
+  if (e.target.closest('#qa-inbox')) {
+    e.stopPropagation();
+    toggleInboxFlyout();
+    return;
+  }
+
+  const goto = e.target.closest('[data-goto]');
+  if (goto) { navigate(goto.dataset.goto); return; }
+
+  const charterTabEl = e.target.closest('[data-charter-tab]');
+  if (charterTabEl) { window.charterTab = charterTabEl.dataset.charterTab; navigate('charter'); return; }
+
+  const shuttleTabEl = e.target.closest('[data-shuttle-tab]');
+  if (shuttleTabEl) { window.shuttleTab = shuttleTabEl.dataset.shuttleTab; navigate('shuttle'); return; }
+
+  const reportsTabEl = e.target.closest('[data-reports-tab]');
+  if (reportsTabEl) { window.reportsTab = reportsTabEl.dataset.reportsTab; navigate('reports'); return; }
+});
+
+Object.defineProperty(window, 'charterTab', { get: () => charterTab, set: v => charterTab = v });
+Object.defineProperty(window, 'shuttleTab', { get: () => shuttleTab, set: v => shuttleTab = v });
+Object.defineProperty(window, 'reportsTab', { get: () => reportsTab, set: v => reportsTab = v });
+
+navigate('my-day');
+</script>
+</body>
+</html>
